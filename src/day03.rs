@@ -1,11 +1,11 @@
 use std::fs;
 use regex::Regex;
 
-// enum Event {
-//     Do(usize),
-//     Dont(usize),
-//     Mul(usize, i32, i32),
-// }
+enum Event {
+    Do(usize),
+    Dont(usize),
+    Mul(usize, i32, i32),
+}
 
 pub fn run(part: i32) {
     let data = fs::read_to_string("data/input-3.txt")
@@ -47,51 +47,45 @@ fn part_2(data: String) -> i32 {
 
     // the indexes of all the matchs in the data string
     let muls_idxs = get_regex_idx(&data, &mul_re);
-    let mut do_idxs = get_regex_idx(&data, &do_re);
-    let mut dont_idxs = get_regex_idx(&data, &dont_re);
+    let do_idxs = get_regex_idx(&data, &do_re);
+    let dont_idxs = get_regex_idx(&data, &dont_re);
 
     let muls: Vec<(i32, i32)> = get_matches(&data, &mul_re);
 
-    // insert a do at the very start
-    do_idxs.insert(0, 0);
-    // insert a dont at the very end
-    dont_idxs.push(data.len() + 1);
-    
-    // used to track which do and dont we are up to in our scan
-    let mut do_idx = 0;
-    let mut dont_idx = 0;
+    let mut events: Vec<Event> = Vec::new();
 
-    let mut total = 0;
-
-    /*
-        a greedy approach.
-
-        Essentially we ensure we are ahead of a do with no dont's inbetween the do
-        and the multiplier. This ensures we are only taking multipliers which are 
-        under the effect of a do. 
-     */
-    for i in 0..muls.len() { 
-        let do_plz = do_idxs[do_idx];
-        let dont = dont_idxs[dont_idx];
-
-        
-        if muls_idxs[i] < dont {
-            total += muls[i].0 * muls[i].1;
-        } else if !(muls_idxs[i] < do_plz) {
-            if do_plz > dont {
-                total += muls[i].0 * muls[i].1;
-                if dont_idx < dont_idxs.len() - 1 {
-                    dont_idx += 1
-                }
-            } else {
-                if do_idx < do_idxs.len() - 1 {
-                    do_idx += 1;
-                }
-            }
-        }
+    for (idx, item) in muls_idxs.iter().enumerate() {
+        events.push(Event::Mul(item.clone(), muls[idx].0, muls[idx].1));
     };
 
-    return total
+    for item in do_idxs {
+        events.push(Event::Do(item.clone()));
+    };
+
+    for item in dont_idxs {
+        events.push(Event::Dont(item.clone()));
+    };
+
+    events.sort_by_key(|event| match event {
+        Event::Do(pos) | Event::Dont(pos) | Event::Mul(pos, _, _) => *pos,
+    });
+
+    let mut dont = false;
+    let mut total = 0;
+
+    for event in events {
+        match event  {
+            Event::Do(_) => dont = false,
+            Event::Dont(_) => dont = true,
+            Event::Mul(_, x, y) => {
+                if !dont {
+                    total += x * y; 
+                }
+            }
+        };
+    };
+
+    total
 }
 
 // returns matches for 'mul(x,y)' in the data as a tuple of values
