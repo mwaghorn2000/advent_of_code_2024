@@ -1,5 +1,6 @@
 mod day01;
 mod day02;
+mod day03;
 
 use std::io::{self, Write};
 
@@ -15,6 +16,7 @@ fn command_prompt() {
     match selection {
         1 => day01::run(get_part()),
         2 => day02::run(get_part()),
+        3 => day03::run(get_part()),
         _ => println!("Day not implemented yet!"),
     };
 }
